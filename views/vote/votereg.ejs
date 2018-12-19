@@ -1,0 +1,611 @@
+
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>투표 등록</title>
+<script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
+<link rel="stylesheet" type="text/css" href="/dist/semantic.min.css">
+<script src="/dist/semantic.min.js"></script>
+<!--<link rel='stylesheet' href='/stylesheets/style.css'/>-->
+<link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/>
+<link href="https://cdn.rawgit.com/mdehoog/Semantic-UI/6e6d051d47b598ebab05857545f242caf2b4b48c/dist/semantic.min.css" rel="stylesheet" type="text/css"/>
+<script src="https://code.jquery.com/jquery-2.1.4.js"></script>
+<script src="https://cdn.rawgit.com/mdehoog/Semantic-UI/6e6d051d47b598ebab05857545f242caf2b4b48c/dist/semantic.min.js"></script>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+
+<script type="text/javascript">
+  var deadlineDt = '';
+  var deadlineTime = '';
+  
+  // 등록 마무리할 일
+  //1. 불러오기 내 글자수 제한         (완료)
+  //2. 불러오기 레이아웃 맞추기        (완료)
+  //3. 전체 글자폰트 맞추기
+  //4. 상세내용 엔터, 글자수 지정하기  (진행-엔터대체 확인..)
+  //5. 항목 조건 검색 name으로         (완료)
+  //6. 항목삭제 버튼 존재여부          (완료-일단포함)
+  //7. 참여범위 불러오기에 포함여부    (완료-지원안함)
+  //8. 기타옵션 불러오기에 포함여부    (완료-지원안함)
+  //9. 달력/시간 팝업옵션 조정         (진행-검색필요)
+ 
+  // 뒤로가기 버튼 -> 메인화면 이동
+  function goMain(){
+      location.href = '../vote/votemain';
+  }
+  
+  //항목추가
+  function addItemList(){
+    // var vote_item_obj = document.getElementsByName("vote_item");
+    // alert("name.length = " + vote_item_obj.length);
+    var inputTag = $("<input type='text' placeholder='항목을 입력하세요.' name='vote_item' maxlength='20'>");
+    $("#item_list").append(inputTag);
+  }
+  
+  //항목삭제
+  function delItemList(obj){
+    if(obj > 1){
+      $("[name=vote_item]:eq("+obj+")").remove();
+    }else{
+      alert("더이상 항목삭제를 할 수 없습니다.")
+    }
+  }
+  
+  // 화면 reload 될 때마다 실행 되는 함수
+  $(document).ready(function() {
+  
+    
+      // 최근 투표등록 목록 드롭다운
+    $('#vote_load').dropdown({
+     });  
+    
+      // 참여범위 드롭다운
+    $('#selectionDropdown').dropdown({
+     });
+     
+      // 마감 날짜(등록)
+    $('#deadline_dt').calendar({
+      type: 'date',
+      text: {
+        days: ['일', '월', '화', '수', '목', '금', '토'],
+        months: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월']
+      },
+      formatter: {
+        date: function (date, settings) {
+          //return a formatted string representing the time of 'date'
+          if (!date) return '';
+          
+          var year = date.getFullYear();
+          var month = (date.getMonth() + 1).toString();
+          month = month.length > 1 ? month : '0' + month;
+          var day = date.getDate().toString();
+          day = day.length > 1 ? day : '0' + day;
+          
+          var fullDateShow = year+'/' + month+'/' + day;   //화면에 보여줄 마감날짜,      Ex)2017/03/03'
+          return fullDateShow;                             //화면에 보여줄 마감날짜,      Ex)2017/03/03
+        }
+      },
+      onChange:function (date) {
+          var year = date.getFullYear();
+          var month = (date.getMonth() + 1).toString();
+          month = month.length > 1 ? month : '0' + month;
+          var day = date.getDate().toString();
+          day = day.length > 1 ? day : '0' + day;
+          
+          var fullDate = year + month + day;               //DB에 들어갈 마감날짜 년월일, Ex)20170303
+          deadlineDt = fullDate;                           //deadlineDt: global 변수 -> submit할때 DB로 전송
+      }
+    });
+    
+     // 마감 시각(등록,수정)
+    $('#deadline_time').calendar({
+      type: 'time',
+      formatter: {
+        time: function (date, settings, forCalendar) {
+          //return a formatted string representing the time of 'date'
+          if (!date) return '';
+          
+          var hour = date.getHours().toString();
+          hour = hour.length > 1 ? hour : '0' + hour;
+          var minute = date.getMinutes().toString();             
+          minute = minute.length > 1 ? minute : '0' + minute;
+          
+          return hour+'시 ' +  minute+'분';                   //화면에 보여줄 마감시간, EX)16시 30분
+          
+        }
+      },
+      onChange : function (date, text, mode) {
+          var hour = date.getHours().toString();
+          hour = hour.length > 1 ? hour : '0' + hour;
+          var minute = date.getMinutes().toString();             
+          minute = minute.length > 1 ? minute : '0' + minute;
+          
+          var time = hour + minute;                           //DB에 들어갈 마감시간 , Ex)1630   
+          deadlineTime = time;                                //deadlineTime: global 변수 -> submit할 때 DB로 전송
+        }
+      ,
+    //  popup options ('popup', 'on', 'hoverable', and show/hide callbacks are overridden)
+      popupOptions: {
+        position: 'top right',
+        lastResort: 'top right', //bottom right
+     //   prefer: 'opposite',
+        hideOnScroll: true
+      }
+    });
+
+
+    //불러오기 submit하기 전 정합성 체크
+    $('#voteloadForm').submit(function() {
+      var vote_load = $("#vote_load").val();            //불러오기 투표 값
+      
+      if(vote_load == ''){
+        alert("최근 등록한 투표목록을 선택해주세요");
+        return false;
+      }else{
+        return true;
+      }
+      
+    });
+
+
+    //등록 submit하기 전 정합성 체크
+    $('#voteregForm').submit(function() {
+
+      var vote_name = $("#vote_name").val();                                //투표 제목
+      var vote_contents = $("#vote_contents").val();                        //투표 설명 textarea
+
+      $('#vote_deadline').val(deadlineDt+deadlineTime+'00');                //날짜 합치기
+      var vote_deadline = deadlineDt+deadlineTime+'00';                     //마감시간
+      var today_date_ojbect = new Date();                                   //현재 날짜 object
+      var year = today_date_ojbect.getFullYear().toString();                //현재 년
+      var month;  //현재 월
+      var date;   //현재 일
+      var hour;   //현재 시간
+      var minute; //현재 분
+      var second; //현재 초
+      
+      var parti_org_id = $("#parti_org_id").val();                          //투표 참석 범위
+      
+      var multi_yn = document.voteregForm.multi_chk.checked;                //복수 선택 여부
+      var secret_yn = document.voteregForm.secret_chk.checked;              //익명 투표 여부
+      var add_item_yn = document.voteregForm.add_item_chk.checked;          //항목 추가 여부
+      //var noti_yn = document.voteregForm.noti_chk.checked;                  //E-mail전송 여부
+      
+      var flag = 0;  // 정합성 체크 var
+
+      ///
+//      vote_contents = vote_contents.replace(/\n/g, "<BR/>");
+     // $("#vote_contents_result").html(vote_contents);
+      // document.getElementById("vote_contents").value = vote_contents;
+     //  $('#vote_contents_result').val(vote_contents);
+      ///
+
+      // 투표 이름 check
+      if(vote_name == ''){
+        $('#vote_name_alert').css("visibility","visible");
+      }
+      else{
+        $('#vote_name_alert').css("visibility","hidden");
+        flag = flag+1;
+      }
+
+      // 투표 항목 최소 2개 미만 및 중복 check
+      var item_cnt = 0;
+      var dup_yn = 0;
+      var item_length = $("[name=vote_item]").length;
+      
+      for(var i = 0 ; i < item_length ; i++){
+        if($("[name=vote_item]:eq("+i+")").val() != ''){  
+          item_cnt++;
+        }else{
+          continue;
+        }
+        
+        for(var j = 0; j < i ; j++){
+            if($("[name=vote_item]:eq("+i+")").val() != '' && ($("[name=vote_item]:eq("+i+")").val() == $("[name=vote_item]:eq("+j+")").val()) ){  //빈 항목 중복 비교제외
+              dup_yn = 1;
+              break;
+            }
+        }
+      }
+      
+
+      // 투표 항목 최소 2개 미만 check
+      if(item_cnt < 2){
+        $('#vote_item_alert').css("visibility","visible");
+      }
+      else{
+        $('#vote_item_alert').css("visibility","hidden");
+        flag = flag+1;
+      }    
+      
+      // 투표 항목 중복 check
+      if(dup_yn == 1){
+        alert("중복되는 항목이 있습니다.");
+      }else{
+        flag = flag+1;
+      }
+      
+
+      //Ex) 9월 -> 09월 변환
+      if(today_date_ojbect.getMonth()+1 < 10){
+        month = '0'+(today_date_ojbect.getMonth()+1).toString();
+      }
+      else{
+        month = (today_date_ojbect.getMonth()+1).toString();
+      }
+      
+      //Ex) 9일 -> 09일 변환
+      if(today_date_ojbect.getDate()<10){
+        date = '0'+today_date_ojbect.getDate().toString();
+      }
+      else{
+        date = today_date_ojbect.getDate().toString();
+      }
+      
+      //Ex) 9시 -> 09시 변환
+      if(today_date_ojbect.getHours()<10){
+        hour = '0'+today_date_ojbect.getHours().toString();
+      }
+      else{
+        hour = today_date_ojbect.getHours().toString();
+      }
+      
+      //Ex) 9분 -> 09분 변환
+      if(today_date_ojbect.getMinutes()<10){
+        minute = '0'+today_date_ojbect.getMinutes().toString();
+      }
+      else{
+        minute = today_date_ojbect.getMinutes().toString();
+      }
+      
+      //Ex) 9초 -> 09초 변환
+      if(today_date_ojbect.getSeconds()<10){
+        second = '0'+today_date_ojbect.getSeconds().toString();
+      }
+      else{
+        second = today_date_ojbect.getSeconds().toString();
+      }      
+      
+      //today_date -> 오늘 날짜 변수 Ex) 20170731174220
+      var today_date = year+month+date+hour+minute+second;  
+      
+      // 마감 날짜 check
+      if(deadlineDt == ''){
+        $('#deadlineDt_alert').css("visibility","visible");
+      }
+      else{
+        $('#deadlineDt_alert').css("visibility","hidden");
+        flag = flag+1;
+      } 
+      
+      // 마감 시간 check
+      if(deadlineTime == ''){
+        $('#deadlineTime_alert').css("visibility","visible").text("* 마감시간을 선택해 주세요");
+      }
+      else{
+        $('#deadlineTime_alert').css("visibility","hidden");
+        flag = flag+1;
+      }
+      
+      //마감 일시 체크,
+      if(deadlineDt != '' && deadlineTime != '' && vote_deadline <= today_date){
+        $('#deadlineTime_alert').css("visibility","visible").text("* 마감시간이 현재시간보다 빠릅니다.");
+      }
+      else if(deadlineDt != '' && deadlineTime != '' && vote_deadline > today_date){
+        $('#deadlineTime_alert').css("visibility","hidden");
+        flag = flag+1;
+      }
+      
+      
+      // 참석 범위 check  
+      if(parti_org_id == ''){
+        $('#parti_org_id_alert').css("visibility","visible");
+      }
+      else{
+        $('#parti_org_id_alert').css("visibility","hidden");
+        flag = flag+1;
+      }       
+      
+
+      //기타 옵션 체크박스 체크여부에 따라 value값 지정
+      if(multi_yn){
+        $('#multi_yn').val('Y');
+      }
+      else{
+        $('#multi_yn').val('N');
+      }
+      
+      if(secret_yn){
+        $('#secret_yn').val('Y');
+      }
+      else{
+        $('#secret_yn').val('N');
+      }
+      
+      if(add_item_yn){
+        $('#add_item_yn').val('Y');
+      }
+      else{
+        $('#add_item_yn').val('N');
+      }
+      
+      // if(noti_yn){
+      //   $('#noti_yn').val('Y');
+      // }
+      // else{
+      //   $('#noti_yn').val('N');
+      // }      
+      
+
+      //모두 정상 입력 했을 시, 포인트 수정 불가 공지 진행
+      if(flag == 7){
+        var check = confirm("투표를 등록하시겠습니까?");
+        //OK 버튼 Click
+        if(check){
+          alert("투표가 등록되었습니다.");
+          return true;
+        }
+        //취소 버튼 Click
+        else{
+          alert("투표등록이 취소되었습니다.");
+          return false;
+        }
+      }
+      //입력 내용이 완벽하지 않은 경우
+      else{
+        alert("필수값을 모두 입력해주세요.");
+        return false;
+      }
+      
+    });
+});
+
+</script>
+<style type="text/css">
+
+	/*제목 글자*/
+	.ui.sub.header {
+    	color:#46649B;
+	}
+	
+	/*최근투표목록 드롭다운*/
+	.ui.selection.dropdown {
+	  width : 100%;
+
+	}
+	
+	/*드롭다운 디폴트 텍스트*/
+	.ui.selection.dropdown>
+	.text {
+	  overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+	}
+	
+	/*드롭다운 메뉴목록 텍스트*/
+  .ui.selection.dropdown 
+  .menu>.item {
+	  overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+	}
+
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<% include ../partials/navigation.ejs %>
+
+  <div class="ui container">
+    <div class="content">
+      <div class="ui segment" style="background-color:#ee5252; height:60px">
+      	<div class="ui left floated header" style="font-size:1.4em; letter-spacing: -1.4px; color:#FFFFFF">
+      	  <%=session.user_name%>님 투표를 등록하세요!
+      	 </div>  
+      </div> <!-- ui segment -->	
+
+      <!--불러오기 Form-->
+    	<form id="voteloadForm" name="voteloadForm" class="ui segment form" action="/voteload" method="post" style="top: -20px;">
+      	<div class="field">
+      	  
+      		<div class="ui sub header">
+      			 불러오기
+      		</div>
+
+      		  <div class = "ui column">
+          		<select id="vote_load" name="vote_load" style="width:100%;" onChange="this.form.submit()">
+          			<option value="">최근투표목록</option>
+          			  <% for(var i = 0; i < data2.length; i++) { %>
+            				<option value="<%=data2[i].vote_id%>"> <%=data2[i].regDtShow%> - <%=data2[i].subject%> </option>
+                  <% } %>
+          		</select>
+        		</div>
+        		<!--<div class="ui column" style="width:20%; position:absolute; right:0px; min-width:50px">-->
+        		<!--  <div class="actions">-->
+        		<!--    <button class="ui submit button" id="load" name="load" style="width:100%; position:absolute; right:0px; min-width:50px;">Load</button>-->
+        	 <!--   </div>-->
+        		<!--</div>-->
+        </div>
+      </form>
+
+      <!--등록 Form-->
+      <form id="voteregForm" name="voteregForm" class="ui segment form" action="/vote_regist" method="post" style="top: -37px;">
+     	  
+  	    <div class="field">
+    			<div class="ui sub header">
+    				 투표제목(*)
+    			</div>
+    			
+    			<% if(data1.load_yn == 'N') { %>
+    			  <input type="text" placeholder="투표 제목을 입력해주세요" id="vote_name" name="vote_name" maxlength="20" style="font-family:'Jeju Gothic'">
+    			<% } else { %>
+    			  <input type="text" value="<%=data1.subject%>" placeholder="투표 제목을 입력해주세요." id="vote_name" name="vote_name" maxlength="20" style="font-family:'Jeju Gothic'">
+    			<% } %>
+    			
+    			<p class="p validation" id="vote_name_alert" style="color:red; visibility:hidden;">
+    				 *투표 제목을 입력해 주세요!
+    			</p>
+  	    </div>
+  	    
+  	    <div class="field">
+  			  <div class="ui sub header">
+  				   상세내용(*)
+  			  </div>
+  			  <% if(data1.load_yn == 'N') { %>
+  			    <textarea id="vote_contents" placeholder="투표 상세 내용을 입력 해 주세요" style="width:100% ;height: 200px; resize:none" name="vote_contents" maxlength="500"></textarea>
+    			<% } else { %>
+    				<textarea id="vote_contents" placeholder="투표 상세 내용을 입력 해 주세요" style="width:100% ;height: 200px; resize:none" name="vote_contents" maxlength="500"><%=data1.comment%></textarea>
+    			<% } %>
+    			<!--<input type="hidden" id="vote_contents_result" ></input>-->
+  			  <!--<p class="p validation" id="vote_contents_alert" style="color:red; visibility:hidden;">-->
+  				 <!--*상세 내용을 작성해 주세요-->
+  			  <!--</p>-->
+  			  
+  			</div>
+  
+  			<div class="field">
+    			<div class="ui sub header">
+    				 항목입력(*)
+    			</div>
+      
+  			  <% if(data1.load_yn == 'N') { %>
+      			<input type="text" placeholder="항목을 입력하세요" name="vote_item" maxlength="20" style="font-family:'Jeju Gothic'">
+      			<input type="text" placeholder="항목을 입력하세요" name="vote_item" maxlength="20" style="font-family:'Jeju Gothic'">
+    			<% } else { %>
+      			<% for (var i = 0 ; i < data3.length ; i++) { %>
+      			  <input type="text" placeholder="항목을 입력하세요" name="vote_item" maxlength="20" value="<%=data3[i].item_name%>" style="font-family:'Jeju Gothic'">
+      			<% } %>
+    			<% } %>
+    			
+    			<div id="item_list"> </div>
+    			<div style="margin-top:10px;"> </div>
+    			
+    		  <button type="button" class="small circular ui icon button" id="add_item" name="add_item" style="background-color:#ee5252; color:white" onclick=javascript:addItemList() >
+    		    <i class="icon plus"></i>항목추가
+    		  </button>
+    		  <button type="button" class="small circular ui icon button" id="add_item" name="add_item" style="background-color:#grey; color:white" onclick=javascript:delItemList(vote_item.length-1) >
+    		    <i class="icon minus"></i>항목삭제
+    		  </button>
+    			<p class="p validation" id="vote_item_alert" style="color:red; visibility:hidden;">
+    				 *최소 2개 이상의 투표 항목을 입력해 주세요!
+    			</p>
+        </div>
+        
+  		  <div class="ui two column grid">
+    			<div class="column">
+    				<div class="ui sub header">
+    					 마감날짜(*)
+    				</div>
+    				<div class="ui calendar" id="deadline_dt">
+    					<div class="ui input left icon" style=" width: 100%;">
+    						<i class="calendar icon"></i>
+    						<input type="text" placeholder="마감날짜 선택" style=" width: 100%; font-family:'Jeju Gothic'" id="vote_deadline_dt" name="vote_deadline_dt" readonly="true">
+    					</div>
+    				</div>
+    				<!-- calendar -->
+    				<p class="p validation" id="deadlineDt_alert" style="color:red; visibility:hidden;">
+    					 *마감날짜를 선택해 주세요
+    				</p>
+    			</div>
+    			<div class="column">
+    				<div class="ui sub header">
+    					 마감시각(*)
+    				</div>
+    				<div class="ui calendar" id="deadline_time">
+    					<div class="ui input left icon" style=" width: 100%;">
+    						<i class="time icon"></i>
+    						<input type="text" placeholder="마감시간 선택" style=" width: 100%; font-family:'Jeju Gothic'" id="vote_deadline_time" name="vote_deadline_time" readonly="true">
+    					</div>
+    				</div>
+    				<p class="p validation" id="deadlineTime_alert" style="color:red; visibility:hidden;"> ..
+    				</p>
+    			<!--날짜합치기 히든-->
+    	      <input type="hidden" id="vote_deadline" name="vote_deadline">
+    			</div>
+  			</div>
+  
+  			<div class="field">
+  				<div class="ui sub header">
+  					 참여범위(*)
+  				</div>
+  				<div id="selectionDropdown" class="ui selection dropdown"  style=" width: 100%;">
+    				<input id="parti_org_id" name="parti_org_id" type="hidden" value="">
+    				
+    				<i class="dropdown icon"></i>
+    				<div class="default text">
+    					 참여 범위 선택
+    				</div>
+    				<div class="menu">
+    					<div class="item" data-value="Team">
+    						 Team
+    					</div>
+    					<div class="item" data-value="SM">
+    						 SM
+    					</div>
+    				</div>
+    			</div>
+    			<p class="p validation" id="parti_org_id_alert" style="color:red; visibility:hidden;">
+    				 *참여 범위를 선택해 주세요
+    			</p>
+    	  </div>
+  
+  			<div class="field">
+  				<div class="ui sub header">
+  					 옵션선택
+  				</div>
+  				<!--<div class="ui two column grid">-->
+  				  <div class="column" style="margin-top:10px">
+          		<div class="ui toggle checkbox">
+                <input type="checkbox" id="multi_chk" name="multi_chk">
+                <input type="hidden" id="multi_yn" name="multi_yn">
+                <label>복수 선택</label>
+              </div>
+            </div>
+            <div class="column" style="margin-top:10px">
+              <div class="ui toggle checkbox">
+                <input type="checkbox" id="secret_chk" name="secret_chk">
+                <input type="hidden" id="secret_yn" name="secret_yn">
+                <label>익명 투표</label>
+              </div>
+            </div>
+          <!--</div>-->
+  				<!--<div class="ui two column grid">-->
+            <div class="column" style="margin-top:10px">
+              <div class="ui toggle checkbox">
+                <input type="checkbox" id="add_item_chk" name="add_item_chk">
+                <input type="hidden" id="add_item_yn" name="add_item_yn">
+                <label>항목 추가</label>
+              </div>
+            </div>
+            <!--<div class="column">-->
+            <!--  <div class="ui toggle checkbox">-->
+            <!--    <input type="checkbox" id="noti_chk" name="noti_chk">-->
+            <!--    <input type="hidden" id="noti_yn" name="noti_yn">-->
+            <!--    <label>공지(e-mail)</label>-->
+            <!--  </div>-->
+            <!--</div>-->
+          <!--<///div>-->
+  	  	</div>
+  	  	<p class="p validation" style="visibility:hidden;">.</p>
+  	
+    		<div class="actions">
+    		  <div class="ui two bottom attached buttons">
+    		    <button class="ui submit button" id="submit" name="submit" style="background-color:#ee5252; color:white">등록</button>
+      		  <button class="ui button" id="cancel" type="button" style="color:white; background:grey" onclick=javascript:goMain()>취소</button>
+      		  
+    		  </div>
+    	  </div>
+      </form>
+      
+    </div> <!-- content -->
+  </div> <!-- ui container -->
+  
+</body>
+</html>

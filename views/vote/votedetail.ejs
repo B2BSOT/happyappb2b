@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>투표 상세보기</title>
+<script src="../../javascripts/jquery.js"></script>
+<script src="../../javascripts/jquery.min.js"></script>
+<link rel="stylesheet" type="text/css" href="/dist/semantic.min.css">
+<script src="/dist/semantic.min.js"></script>
+<script type="text/javascript" src="//apis.daum.net/maps/maps3.js?apikey=770adf51a5a246189a8db45706f471ce&libraries=services"></script>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="description" content="">
+<meta name="author" content="">
+<script type="text/javascript">
+    var vote_content_cnt  =  <%= data.detail_info.length %>; 
+    
+    $(document)
+    .ready(function() {
+    	// 투표 검증 처리
+    	var verifyVote = "<%= data.verifyVote %>";
+    	if(verifyVote == "NotUser") {
+    		alert("투표할 수 있는 조직이 아닙니다.");
+    		location.href = "/vote/votemain";
+    	}else if(verifyVote == "NotExist"){
+    		alert("해당 투표 정보가 존재하지 않습니다.");
+    		location.href = "/vote/votemain";
+    	}else { //"OK" 
+    	}
+        
+        //변수 설정
+        // ├ deadline_dtm     = 마감일시
+        // ├ parti_org_id     = SM or 팀 코드
+        // ├ multi_yn         = 다중/단일 투표
+        // ├ secret_yn        = 공개/비밀 투표
+        // ├ add_item_yn      = 항목 추가 yn
+        // ├ noti_yn          = 메일전송?
+        // └ vote_content_cnt = 투표 항목 개수
+        // ├ vote_total_cnt   = ??
+        // ├ vote_reg_id      = 투표등록ID
+        // ├ login_id         = 로그인 Session ID
+        // ├ vote_state       = 투표 상태
+     
+        var deadline_dtm = <%= data.master_info.deadline %>;
+        var parti_org_id = <%= data.master_info.parti_org_id %>;
+        var multi_yn     = "<%= data.master_info.multi_yn    %>";
+        var secret_yn    = "<%= data.master_info.secret_yn   %>";
+        var add_item_yn  = "<%= data.master_info.add_item_yn %>";
+        var noti_yn      = "<%= data.master_info.noti_yn     %>";
+            vote_content_cnt  =  <%= data.detail_info.length %>;
+        var vote_total_cnt = <%= data.vote_total_cnt %>;
+        var vote_reg_id  = "<%=data.master_info.reg_user_id %>";
+        var login_id     = "<%=session.user_id %>";
+        var vote_state   = "<%=data.master_info.state%>";
+        
+        // date_resizing() 
+        //   ├ input  : 20170831000000
+        //   └ output : 2017년 08월 31일 
+        date_resizing(deadline_dtm);
+        
+        // :투표 타입
+        //  ├ 다중/단일 투표
+        //  ├ 비밀/공개 투표
+        vote_type_show(multi_yn, secret_yn);
+        
+        // 투표 현황 테이블 셋팅
+        var detail_info_list = <%- JSON.stringify(data.detail_info) %>;
+        
+        init_vote_table(detail_info_list, vote_total_cnt);
+        
+        init_buttons(vote_state, secret_yn, add_item_yn, vote_reg_id, login_id);
+        
+        init_progress();
+    });
+    
+    function init_vote_table(detail_info_list, vote_total_cnt) {
+ 		//console.log(detail_info_list);
+        var vote_table = $("#vote_detail_table");
+        vote_table.empty();
+        
+        for(var i in detail_info_list) {
+        	var detail_info = detail_info_list[i];
+        	
+        	setVoteItemDetail(vote_table, detail_info, vote_total_cnt);
+        }
+ 	}
+ 	
+    function init_buttons(vote_state, secret_yn, add_item_yn, vote_reg_id, login_id) {
+        if(vote_state=='C' || (vote_reg_id != login_id)){
+            $("#update_button").hide();
+            $("#delete_button").hide();
+        }
+        
+        if(vote_state == 'C') {
+            $(".ui.middle.icon.button").hide(); // 투표체크버튼 비활성화
+        }
+        
+        if(secret_yn == "Y" && (vote_reg_id != login_id)) {
+            $("#vote_current_state_button").hide();
+        }
+        
+        if(add_item_yn=='N')
+        {
+            $("#add_item_button").hide();
+        }
+    }
+    
+    function init_progress() {
+        $('.ui.teal.progress').progress();
+    }
+    
+    function click_checkbutton() {
+    	console.log("check button CLICK : " + this.id);
+    	
+    	$("#loader").show();
+        	
+    	var voteData = {};
+    	var item_id = this.id;
+    
+    	const master_info = <%- JSON.stringify(data.master_info) %>;
+    	voteData.vote_id = master_info.vote_id;
+    	voteData.multi_yn = master_info.multi_yn;
+    	voteData.item_id = item_id;
+    	voteData.isChecked = $("#checked_"+item_id).val(); // Y or N
+    	
+    	$.ajax({
+            type: 'POST',
+            data: JSON.stringify(voteData),
+            contentType: 'application/json',
+            datatype: "json", // expecting JSON to be returned
+            url: '/checkItem',
+            success: function(result) {
+            	console.log(result);
+            	if(result.status == 200){
+    				if(result.type == "delete") {
+                    //	alert("투표를 취소했습니다.");
+                	}else {
+                    //	alert("투표하였습니다.");
+                	}
+                	
+                	$("#loader").hide();
+                	
+                    var detail_info_list = result.data.detail_info;
+                    var vote_total_cnt = result.data.vote_total_cnt;
+                    
+                    init_vote_table(detail_info_list, vote_total_cnt);
+                    init_progress();
+                    
+                } else {
+                	alert("투표 중 오류가 발생했습니다.");
+                	location.href = '/vote/votemain';
+                	  
+              	}
+            }
+        });
+    }
+	
+	/*****************************************************************
+	 * setVoteItemDetail 
+	 * - 각각의 vote item의 상세 정보를 셋팅 한다
+	 * - 셋팅 순서
+	 *   1.vote item TR태그 생성
+	 *   2.버튼 TD태그 생성 및 item 투표 체크 버튼 생성
+	 *   3.Progress Bar TD태그 생성 및 ProgBar 정보 생성
+	 *   4.hidden INPUT태그 생성
+	 *   4.Button, ProgBar TD를 붙인 TR을 TABLE에 append 
+	 ****************************************************************/
+	function setVoteItemDetail(vote_table, detail_info, vote_total_cnt) {
+			
+		// tr 생성
+		var tr = $("<tr>", {"class": "votedetail"});
+		
+		// check button 생성
+		var td_button = $("<td>", {"class": "votedetail"});
+		var button = $("<button>", {"id": detail_info.item_id}).addClass(function() {
+							var classStr = "ui middle icon button";
+							return ((detail_info.voted=="Y")?classStr+" blue":classStr);
+						})
+		var icon = $("<i>").addClass("check icon");
+		button.click(click_checkbutton);
+		button.append(icon);
+		td_button.append(button);
+		
+		// progress bar 생성
+		var td_progress = $("<td>");
+		var div_prog = $("<div>", {"id": "prog_"+detail_info.item_id}).addClass("ui teal progress")
+						.attr({"data-percent": detail_info.cnt*100/vote_total_cnt, "cnt": detail_info.cnt});
+		var div_bar = $("<div>").addClass("bar");
+		var div_label = $("<div>").addClass("label");
+		var span_item_name = $("<span>").text(detail_info.item_name);
+		var span_item_cnt = $("<span>", {"class": "vote_cnt"}).text("( "+detail_info.cnt+" )");
+		
+		div_label.append(span_item_name, span_item_cnt);
+		div_prog.append(div_bar, div_label);
+		td_progress.append(div_prog);
+		
+		// voted hidden 생성
+		var voted_hidden = $("<input>", {"type": "hidden", "id": "checked_"+detail_info.item_id})
+							.val(detail_info.voted);
+		
+		// table에 child로 td 2개가 추가된 tr을 추가
+		tr.append(td_button).append(td_progress).append(voted_hidden);
+		vote_table.append(tr);
+	}
+	
+ 	//┌───────────────────────────────────────────────┐
+    //│ date_resizing() 							  │
+    //│   ├ input  : 20170831000000                   │
+    //│   ├ output : 2017년 08월 31일                 │  
+    //│   ├ deadline_year         : 2017              │
+    //│   ├ deadline_month        : 08                │
+    //│   ├ deadline_date         : 31                │
+    //│   └ resizing_deadline_dtm : 2017년 08월 31일  │
+    //└───────────────────────────────────────────────┘
+    function date_resizing(deadline_dtm) {
+    	
+    	// deadline_dtm type 강제 casting
+    	//  └ type : Object → String
+    	deadline_dtm += "";
+    	
+    	var deadline_year  = deadline_dtm.substring(0,4);
+    	var deadline_month = deadline_dtm.substring(4,6);
+    	var deadline_date  = deadline_dtm.substring(6,8);
+    	var resizing_deadline_dtm = deadline_year + "-"+deadline_month+"-"+deadline_date;
+    	
+    	$("#deadline_dtm").text("마감 : "+resizing_deadline_dtm);
+    }
+    
+    
+    //┌───────────────────────────────────────────────┐
+    //│ vote_type_show() : 투표 타입 Show			  │
+    //│   ├ 단중/단일 투표                            │
+    //│   ├ 비밀/공개 투표                            │  
+    //│   └ 항목 추가 가능/ 불가능 표시               │
+    //│                                               │
+    //└───────────────────────────────────────────────┘
+    function vote_type_show(multi_yn, secret_yn) {
+    	
+    	var vote_type = $("#vote_type");
+    	
+    	var multi_y = $("<div>").addClass("ui icon yellow button").attr({"data-tooltip" : "복수투표. 여러개 항목에 투표가능합니다.", "data-position" : "top left"})
+    	                .append($("<i>").addClass("users middle icon"));
+    	var multi_n = $("<div>").addClass("ui icon yellow button").attr({"data-tooltip" : "단일투표. 하나의 항목만 투표가능합니다.", "data-position" : "top left"})
+    	                .append($("<i>").addClass("user middle icon"));
+    	var secret_y = $("<div>").addClass("ui icon yellow button").attr({"data-tooltip" : "익명투표. 투표항목의 투표자가 보이지 않습니다.", "data-position" : "top left"})
+    	                .append($("<i>").addClass("lock middle icon"));
+    	var secret_n = $("<div>").addClass("ui icon yellow button").attr({"data-tooltip" : "공개투표. 투표항목의 투표자가 보입니다.", "data-position" : "top left"})
+    	                .append($("<i>").addClass("unhide middle icon"));
+    	
+    	if(multi_yn=='Y'){
+    		vote_type.append(multi_y);
+    	}else{
+    		vote_type.append(multi_n);
+    	}
+    	
+    	if(secret_yn=="Y"){
+    		vote_type.append(secret_y);
+    	}else{
+    		vote_type.append(secret_n);
+    	}
+    	
+ 		
+    }
+    
+     //┌───────────────────────────────────────────────┐
+    //│ add_item() : 투표 항목 추가 클릭시			  │
+    //│   ├ remove 버튼 show                          │
+    //│   ├ 항목 input tag show                       │  
+    //│                                               │
+    //└───────────────────────────────────────────────┘
+    function add_item()
+    {
+       	// var lastItemNo = $(".unstackable.ui.definition.table tr:last").attr("class").replace("item", "");
+    	var  last_num = <%= data.detail_info.length %>;
+    	
+    	var row = "<tr style='max-height:40px'>";
+    	row = row +"<td style='margin-top: -15px; width:40px; '>";
+    	row = row +"<button class='red ui middle icon button' onClick='javascript:remove_item(this)' text='kkk' style='margin-right: 0px;'><i class='remove icon'></i></button>";
+		row = row +"</td>";			
+    	row = row +"<td>";
+    	row = row +"<div>";
+    	row = row +"<input type='text' placeholder='항목을 입력해주세요' style='width: 100%' >";
+    	row = row +"</div>";
+		row = row +"</td>";				    
+		row = row + "</tr>";
+    
+    	$('#item_add_table').append(row);
+    }
+    
+    
+    //┌───────────────────────────────────────────────┐
+    //│ remove_item() : 투표 항목 제거 클릭시		  │
+    //│   ├ 항목 제거                                 │  
+    //│                                               │
+    //└───────────────────────────────────────────────┘
+    function remove_item(obj)
+    {
+        $(obj).parent().parent().remove();
+    }
+    
+    
+    //┌───────────────────────────────────────────────┐
+    //│ show_modal() : 항목 추가하기 모달			  │
+    //└───────────────────────────────────────────────┘
+    function show_modal()
+    {    
+        $('.ui.longer.modal.item.add').modal('show');
+    }
+    
+    
+    function Check_duplicate_vote_item()
+    {
+        var vote_item_name = $("#add_vote_item_name").val();
+        var detail_info_list = <%- JSON.stringify(data.detail_info) %>;
+       
+        // alert(detail_info_list.length);
+        
+        // 추가했을 경우 중복된 항목이 있는지 확인하는 flag
+        // flag = 0; -> 투표 항목이 없는상태
+        // flag = 1; -> 이미 투표 항목이 있는 상태
+        var flag = 0; 
+        var i = 0;
+        
+        
+        
+        for(i in detail_info_list) {
+        
+        	if(vote_item_name == detail_info_list[i].item_name)
+        	{
+        	    flag = 1;
+        	    alert("이미 있는 항목입니다.");
+        	    return 0;
+        	}
+        	else if(!vote_item_name.length){
+        	    flag = 1;
+        	    alert("항목을 입력 해주세요")
+        	    break;
+        	}
+        }
+        
+        if( flag == 0)
+        {
+            add_vote_item(vote_item_name);
+        }
+    }
+    
+    function add_vote_item(vote_item_name){
+        
+        var add_vote_item_Data = {};
+        var vote_id = <%= data.master_info.vote_id %>;
+        
+	    add_vote_item_Data.vote_id = <%= data.master_info.vote_id %>;
+	    add_vote_item_Data.new_item_id = vote_content_cnt +1;
+	    add_vote_item_Data.item_name = vote_item_name;
+       
+        $.ajax({
+        type: 'POST',
+        data: JSON.stringify(add_vote_item_Data),
+        contentType: 'application/json',
+        datatype: "json", // expecting JSON to be returned
+        url: '/add_vote_item',
+        success: function(result) {
+            
+            if(result.status == 500){
+            
+                alert("이미 있는 항목입니다");
+                return 0;
+            }
+            
+                var detail_info_list = result.data.detail_info;
+                var vote_total_cnt = result.data.vote_total_cnt;
+                var secret_yn = result.data.master_info.secret_yn;
+                
+                init_vote_table(detail_info_list, vote_total_cnt);
+                init_vote_show(secret_yn);
+                vote_content_cnt = add_vote_item_Data.new_item_id;
+                $("#add_vote_item_name").val("");
+        }
+    });
+        
+    }
+    
+    function goto_update_vote(vote_id){
+        location.href = '/vote/voteupdate/' + vote_id;
+    }
+    
+    function goto_vote_main(){
+        location.href = '/vote/votemain';
+    }
+    
+    // function delete_vote(vote_id){
+    //     goto_vote_main()
+    // }
+    
+    function delete_vote_comfirm(vote_id) {
+     
+        // alert(post_id);
+         $.ajax({
+         type: "post",
+         url : "/delete_vote",
+         data: {
+         vote_id : vote_id
+         },
+        success:function(data){   
+            goto_vote_main();
+        },
+        error:function(e){  
+            alert(e.responseText);  
+        }  
+      });   
+     }
+    
+    function delete_vote(vote_id) {
+        if(confirm("등록한 투표 및 모든 신청 정보가 삭제됩니다.\n정말로 삭제하시겠습니까?")) {
+            delete_vote_comfirm(vote_id);
+        }
+    }
+    
+    /* 투표 현황 Select query */
+    function vote_current_state(vote_id){
+       
+          $.ajax({
+             type: "post",
+             url : "/vote_current_state",
+             data: {
+             vote_id : vote_id
+           
+             },
+            success:function(result){
+                
+                var vote_state_info = result.data2;
+                
+                init_state_table(vote_state_info);
+            },
+            error:function(e){  
+                alert(e.responseText);  
+            }  
+          });   
+        
+        // show_modal2();
+        
+    }
+    
+    
+    function init_state_table(vote_state_info) {
+ 		//console.log(detail_info_list);
+        var vote_state_table_tr = $("#vote_state_table_tr");
+        vote_state_table_tr.empty();
+          
+       // for(var i in vote_state_info) {
+            
+        	var state_info = vote_state_info;
+            
+        	
+        	setVoteStateDetail(state_info, vote_state_table_tr);
+       // }
+        show_modal2();
+ 	}
+ 	
+                        		
+ 	function setVoteStateDetail(state_info, vote_state_table_tr)
+ 	{
+ 	    var row = '';
+ 	    var j;
+ 	    for(var i in state_info){
+            //맨 처음 아이템은 그냥 Put     	     
+            if(i==0){
+ 	            // div 생성
+ 	             row = row + "<div>";
+		         row = row + "<span>";
+		         row = row + state_info[i].item_name;
+		         row = row + "</span>";
+		         row = row + "<br>";
+		         row = row + "<span>";
+		         row = row + state_info[i].user_name+ ' ';
+		         row = row + "</span>";
+		    }
+		    else{
+		       j = i-1;
+		       if(state_info[i].item_id == state_info[j].item_id){
+		           row = row + "<span>";
+		           row = row + state_info[i].user_name+ ' ';
+		           row = row + "</span>";
+		       }
+		       else{
+		           row = row + "</div>";
+		           row = row + "<br>";
+		           row = row + "<div>";
+		           row = row + "<span>";
+		           row = row + state_info[i].item_name;
+		           row = row + "</span>";
+		           row = row + "<br>";
+		           row = row + "<span>";
+		           row = row + state_info[i].user_name+ ' ';
+		           row = row + "</span>";
+		       }
+		    }
+		}
+	    row = row+"</div>";
+     	vote_state_table_tr.append(row);
+ 	}
+    
+    function show_modal2()
+    {
+         $('.ui.longer.modal.state').modal('show');
+    }
+</script>
+    
+<style type="text/css">
+    .ui.progress>.label {
+            top: 0px;
+        }
+    
+    .ui.teal.progress {
+    	margin-bottom: 0px;
+    }
+    
+    tr.votedetail {
+    	max-height: 40px;
+    }
+    
+    td.votedetail {
+    	margin-top: -15px;
+    	width: 40px;
+    }
+    
+    .ui.middle.icon.button {
+    	margin-right: 0px;
+    }
+    
+    .ui.button{
+        padding-right: 2px;
+        padding-left: 2px;
+    }
+        
+</style>
+</head>
+
+
+<body>
+<!-- Navigation -->
+<% include ../partials/navigation.ejs %>
+<!-- Page Content -->
+<div class="ui container">
+	<div class="content">
+		<div class="ui segments" style="background-color:white">
+			<div class="ui segment" style="background-color:#ee5252">
+				<div class="header" href="#">
+					<span style="font-family: 'Jeju Gothic'; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block; line-height: 1.2; font-size:1.5em; letter-spacing:-1px; width:100%; color:#FFFFFF"><%= data.master_info.subject %></span>
+				</div>
+			</div>
+			
+			
+			<div class="ui segment">
+				<div class="ui avatar image">
+					<img src="<%= data.master_info.user_img %>" >
+				</div>
+				<a class="author"><%= data.master_info.user_name %></a>
+                <span class="date" id = "deadline_dtm" style="margin-top : 5px; letter-spacing:-1.2px; float: right"></span>
+            </div>
+            <div class="ui segment">
+				<pre style="white-space: pre-wrap; font-size:1em; font-family:'Jeju Gothic', serif !important; margin-left: 15px; ">
+					<!--<span class="date"></span>-->
+					<p style="margin-top:-35px"><%= data.master_info.comment %></p>
+				</pre>
+				<div class="ui clearing divider"></div>
+				
+				<div class="ui two column grid">
+				    <div class= "ui column">
+				        <div id="vote_type"></div>
+				    </div>
+				    <div class= "ui column">
+			            <button class="yellow small circular ui icon button" id="vote_current_state_button" onClick="javascript:vote_current_state(<%= data.master_info.vote_id%>)" style="float: right; margin-top : 3px">
+				            투표 현황
+				        </button>
+				    </div>
+				</div>
+
+			</div>
+			<div class="ui segment" style="margin:0px; padding:2px">
+				<!--<h3>투표 현황</h3>-->
+				<table class="unstackable ui definition table" id="vote_detail_table" >
+				<!-- setVoteItemDetail -->
+				</table>
+			    <!-- Loader-->
+                <div class="ui active inverted dimmer" id="loader" style="display: none">
+                    <div class="ui small text loader">투표 반영중</div>
+                </div>
+
+    			<button class="small circular ui icon button" id ="add_item_button" style="background-color:#ee5252; color:white; margin-left:12px" onClick="javascript:show_modal()">
+    			    <i class="icon plus"></i>항목추가
+    			</button>
+    			
+			</div>
+			
+            <div class="ui right aligned segment" style="margin-top:30px">
+                <button class="ui primary button" id="list_button" onClick="javascript:goto_vote_main()" style="background-color:#2185D0; color:white; width:80px">  목록으로 </button>
+                <button class="ui primary button" id="update_button" onClick="javascript:goto_update_vote(<%= data.master_info.vote_id%>)" style="background-color:#ee5252; color:white; width:80px">  수정  </button>
+                <button class="ui button" id="delete_button" onClick="javascript:delete_vote(<%= data.master_info.vote_id%>)" style="background:grey; color:white;width:80px">  삭제  </button>
+            </div>
+
+			<!--항목추가 modal Start-->
+			<div class="ui longer modal item add">
+            	<div class="header" >
+            		항목추가
+            	</div>
+            	<div class="scrolling content">
+            	    <table class="unstackable ui definition table" id="item_add_table">
+                        <tr style='max-height:40px; '>
+                        	<!--<td style="margin-top: -15px; width:40px; ">-->
+                        	<!--	<button class="yellow ui middle icon button" style="margin-right: 0px;"><i class="add icon"></i></button>-->
+                        	<!--</td>-->
+                        	<td>
+                        		<div>
+                        			<input type='text' id='add_vote_item_name' placeholder='항목을 입력해주세요' style='width: 100%'>
+                        		</div>
+                        	</td>
+                        </tr>
+                        
+                     </table>
+            	</div>
+                <div class="actions">
+                    <div class="ui red approve button" onClick="javascript:Check_duplicate_vote_item()" style="width: 50px">완료</div>
+                    <div class="ui grey approve button" style="width: 50px">취소</div>
+                </div>
+            </div>
+			<!--항목추가 modal End-->
+			
+			<!--투표현황 modal Start-->
+			<div class="ui longer modal state">
+            	<div class="header" >
+            		투표 현황
+            	</div>
+            	<div class="scrolling content">
+            	    <table class="unstackable ui definition table" id="vote_state_table">
+                        <tr id="vote_state_table_tr" style='max-height:40px;'>
+                        </tr>
+                      </table>
+            	</div>
+                <div class="actions">
+                    <div class="ui primary approve button">Cancel</div>
+                </div>
+            </div>
+			<!--투표현황 modal End-->
+	
+		</div>
+		<!-- 상세보기 segment -->
+	</div>
+	<!-- content -->
+</div>
+<!-- container -->
+
+
+
+</body>
+</html>
+
+
+
+<!--TODO List-->
+<!--1. master comment 800자 화면 처리-->

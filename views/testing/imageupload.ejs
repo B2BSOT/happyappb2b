@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+    
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="">
+	<meta name="author" content="">    
+
+	<title>B2B사업팀 HappyDay</title>
+	
+	<script src="../javascripts/jquery.js"></script>
+	<script src="../javascripts/jquery.min.js"></script>
+	<script src="/dist/semantic.min.js"></script>
+	<script src="/dist/components/visibility.js"></script>
+	<script src="/dist/components/sidebar.js"></script>
+	<script src="/dist/components/transition.js"></script>
+    
+    <link rel="stylesheet" type="text/css" href="/dist/semantic.min.css">
+    
+    <script type="text/javascript">
+    $(document).ready(function() {
+    	
+    	
+  var file = document.getElementById('file');
+  var image = document.getElementById('image');
+  file.onchange = function (event) {
+  	alert('변경');
+    var target = event.currentTarget;
+    var xmlHttpRequest = new XMLHttpRequest();
+    xmlHttpRequest.open('POST', 'https://api.imgur.com/3/image/', true);
+    xmlHttpRequest.setRequestHeader("Authorization", "Client-ID 285a540d6ec9798");
+    xmlHttpRequest.onreadystatechange = function () {
+      if (xmlHttpRequest.readyState == 4) {
+        if (xmlHttpRequest.status == 200) {
+          var result = JSON.parse(xmlHttpRequest.responseText);
+          image.src = result.data.link;
+          console.log(result);
+          alert('업로드성공 경로'+ result.data.link+'deleteHash도 리턴됨 '+result.data.deletehash);
+        }
+        else {
+        	alert("업로드 실패");
+          image.src = "http://dy.gnch.or.kr/img/no-image.jpg";
+        }
+      }
+    };
+    xmlHttpRequest.send(target.files[0]);
+    image.src = "https://nrm.dfg.ca.gov/images/image-loader.gif";
+  };
+    	
+    	
+        
+    });
+
+    </script>
+    
+    <style type="text/css">
+
+        
+    </style>
+    
+</head>
+
+<body>
+	
+ <img id=image src="http://dy.gnch.or.kr/img/no-image.jpg">
+<br>
+<input id=file type=file>
+
+</body>
+
+</html>

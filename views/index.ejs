@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>
+    <%= title %>
+  </title>
+
+  <!-- Standard Meta -->
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
+  <script src="/dist/semantic.min.js"></script>
+
+  <link rel="stylesheet" type="text/css" href="/dist/semantic.min.css" />
+
+  <style type="text/css">
+
+
+    body{
+      background-color: #FBBD08;
+
+    }
+
+    body>.grid {
+      height: 100%;
+    }
+
+    .image {
+      margin-top: -100px;
+    }
+
+    .column {
+      max-width: 400px;
+    }
+  </style>
+
+  <script type="text/javascript">
+    // loginForm.prepage.value = escape(document.referrer);
+    $(document).ready(function() {
+
+        $('.ui.large.form').form
+        ({
+          fields:
+          {
+            /*user_name:
+            {
+              identifier: 'user_name',
+              rules:
+              [{
+                type: 'empty',
+                prompt: '이름을 입력하세요'
+              }]
+            },*/
+            emp_num:
+            {
+              identifier: 'emp_num',
+              rules:
+              [{
+                type: 'empty',
+                prompt: '사번을 입력하세요'
+              },
+              {
+                type: 'decimal',
+                prompt: '사번을 정확히 입력하세요'
+              }]
+            }
+          }
+        });
+      });
+  </script>
+</head>
+
+<body>
+  <div class="ui middle aligned center aligned grid">
+    <div class="column">
+      <h2 class="ui brown image header" style="margin-bottom:30px !important">
+        <div class="content">
+        <img class="ui medium image" src="/images/mainlogo.png">
+        </div>
+      </h2>
+      <form class="ui large form" name="loginForm" action="/login" method="post">
+      <!--<input type="hidden" name="prepage">-->
+        <div class="ui stacked segment">
+          <!--div class="field">
+            <div class="ui left icon input">
+              <i class="user icon"></i>
+              <input type="text" name="user_name" placeholder="이름">
+            </div>
+          </div-->
+          <div class="field">
+            <div class="ui left icon input">
+              <i class="lock icon"></i>
+              <input type="number" name="emp_num" placeholder="사번">
+            </div>
+          </div>
+          <div class="ui fluid large brown submit button">로그인</div>
+          <input type="hidden" name="redir_url" value=<%=redirURL%>>
+        </div>
+
+        <div class="ui error message"></div>
+      </form>
+    </div>
+  </div>
+
+</body>
+
+</html>

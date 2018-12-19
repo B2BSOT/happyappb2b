@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="">
+	<meta name="author" content="">
+	<title>해피데이 목록</title>
+	<!--<link rel='stylesheet' href='/stylesheets/style.css' />-->
+	<script src="../javascripts/jquery.js"></script>
+	<script src="../javascripts/jquery.min.js"></script>
+	<script src='../javascripts/moment.min.js'></script>
+	<script src="/dist/components/visibility.js"></script>
+	<script src="/dist/components/sidebar.js"></script>
+	<script src="/dist/components/transition.js"></script>
+	
+	<script src="/dist/semantic.min.js"></script>
+	<link rel="stylesheet" type="text/css" href="/dist/semantic.min.css">
+
+	<!--script src='/fullcalendar/fullcalendar.js'></script-->
+	<!--link rel='stylesheet' type="text/css" href='/fullcalendar/fullcalendar.css' /-->	
+	<script src='../javascripts/fullcalendar.js'></script>
+	<link rel='stylesheet' type="text/css" href='../stylesheets/fullcalendar.css' />
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/hot-sneaks/jquery-ui.css">
+    
+	
+	<script type="text/javascript">
+	    $(document).ready(function() {
+
+            // page is now ready, initialize the calendar...
+        
+            $('#calendar').fullCalendar({
+                themeSystem : 'jquery-ui',
+                dayClick: function() {
+                    alert('a day has been clicked!');
+                }
+            })
+        
+        });
+	
+	</script>
+	
+	<style type="text/css">
+	</style>
+	
+<body>
+	<!-- Navigation -->
+	<% include ../partials/navigation.ejs %>
+	<!-- Page Content -->
+	<div class="ui container">
+	    <div id='calendar'></div>
+    </div>
+</body>

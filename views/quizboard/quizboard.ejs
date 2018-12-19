@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+    
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="">
+	<meta name="author" content="">    
+
+	<title>퀴즈</title>
+	
+	<script src="../javascripts/jquery.js"></script>
+	<script src="../javascripts/jquery.min.js"></script>
+	<script src="/dist/semantic.min.js"></script>
+	<script src="/dist/components/visibility.js"></script>
+	<script src="/dist/components/sidebar.js"></script>
+	<script src="/dist/components/transition.js"></script>
+    
+    <link rel="stylesheet" type="text/css" href="/dist/semantic.min.css">
+    
+    <script type="text/javascript">
+    $(document)
+    .ready(function() {
+        $(".ui.green.button").click(function() {
+            // modal로 등록창 구현
+            $('.ui.modal')
+                .modal('setting', 'closable', true)
+                .modal('show')
+            ;
+        });
+        
+        $(".ui.approve.button").click(function() {
+            var subject = $('#subject').val();
+            var content = $('#content').val();
+            
+            $.ajax({
+                type: 'POST',
+                url: '/create',
+                data: {
+                    subject : subject,
+                    content : content
+                },
+                success: function(data) {
+                    
+                    alert("success regist");
+                    //$('.ui.modal').modal('show');
+                },
+                error: function(e) {
+                    alert(e.responseText);
+                }
+            });
+        });
+        
+    });
+    </script>
+    
+    <style type="text/css">
+        .ui.form textarea, .ui.form input[type=text] {
+            margin-bottom: 1em;
+        }
+        
+    </style>
+    
+</head>
+
+<body>
+	<!-- Navigation -->
+	<% include ../partials/navigation.ejs %>
+    
+    <div class="ui stackable grid container">
+        <div class="computer only row">
+            <div class="thirteen wide column">
+                <div class="ui message">
+                    <h1 class="ui huge header">
+                    Quiz Board!
+                    </h1>
+                    <p class="lead">
+                    이 게시판은 B2B사업팀의 뇌섹남녀들을 위한 공간입니다. 
+                    </p>
+                    <div class="ui hidden divider"></div>
+                    <div class="ui green button">
+                        <i class="edit icon"></i> Quiz 등록
+                    </div>
+                </div>
+                <div class="ui hidden section divider"></div>
+                <div class="ui stackable grid">
+                    <div class="three column row">
+                        
+                        <% for(var i in data) { %>
+                            <div class="column">
+                                <h1 class="ui header">
+                                    <%= data[i].subject %>
+                                </h1>
+                                <p>
+                                <%= data[i].content %>
+                                </p>
+                                <div class="ui small basic button">
+                                상세보기 &raquo;
+                                </div>
+                            </div>
+                        <% } %>
+                        
+                    </div>           
+                </div>
+            </div>
+        </div>
+        <div class="tablet mobile only row pushable">
+            <div class="ui basic segment pusher">
+                <div class="ui container">
+                    <div class="ui message">
+                        <h1 class="ui huge header">
+                        Quiz Board!
+                        </h1>
+                        <p class="lead">
+                        이 게시판은 B2B사업팀의 뇌섹남녀들을 위한 공간입니다. 
+                        </p>
+                        <div class="ui hidden divider"></div>
+                        <div class="ui green button">
+                            <i class="edit icon"></i> Quiz 등록
+                        </div>
+                    </div>
+                    <div class="ui hidden section divider"></div>
+                    <div class="ui stackable grid">
+                        <div class="three column row">
+                            <% for(var i in data) { %>
+                                <div class="column">
+                                    <h1 class="ui header">
+                                        <%= data[i].subject %>
+                                    </h1>
+                                    <p>
+                                    <%= data[i].content %>
+                                    </p>
+                                    <div class="ui small basic button">
+                                    상세보기 &raquo;
+                                    </div>
+                                </div>
+                            <% } %>
+                        </div>           
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+<div class="ui modal">
+    <div class="header">Quiz 등록</div>
+    <div class="content">
+        <div class="ui form" id="reg_form" action="/quizboard/create" method="post">
+          <div class="field">
+            <label>제목</label>
+            <input type="text" id="subject">
+            <label>내용</label>
+            <textarea id="content"></textarea>
+          </div>
+        </div>
+    <div class="actions">
+        <div class="ui positive approve button">등록</div>
+        <div class="ui cancel button">취소</div>
+    </div>
+</div>
+
+</html>
