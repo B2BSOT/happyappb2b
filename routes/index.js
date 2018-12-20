@@ -61,7 +61,7 @@ module.exports = function(app, connectionPool) {
 
     app.post('/login', (req, res) => {
         /* 로그인시 Error 처리를 위한 route */
-        consol.log(req.error);
+        console.log(req.error);
         res.redirect('/');
     });
 
@@ -79,7 +79,7 @@ module.exports = function(app, connectionPool) {
                         req.user = rows;
                         next();
                     }else {
-                        req.error = "nouser";
+                        req.error = 'nouser';
                         next('route');
                     }
                 }
