@@ -78,6 +78,7 @@ module.exports = function(app, connectionPool) {
                         req.user = rows;
                         next();
                     }else {
+                        alert("사번을 정확히 입력하세요.")
                         next('route');
                     }
                 }
