@@ -8,63 +8,18 @@ module.exports = function(app, connectionPool) {
 
     app.get('/mypage/user', function(req, res, next) {
 
-      user.belongsTo(com_org, {as: 'team', foreignKey: 'team_id'});
-      user.belongsTo(com_org, {as: 'sm', foreignKey: 'sm_id'});
-
-      // session의 user_id
-      var user_id = req.session.user_id;
-
-      user.findOne({
-        raw: true,
-        include : [
-          {
-            model: com_org,
-            as: 'team',
-            attributes:[
-              [models.Sequelize.col('org_nm'), 'team_name']
-            ]
-          },
-          {
-            model: com_org,
-            as: 'sm',
-            attributes:[
-              [models.Sequelize.col('org_nm'), 'sm_name']
-            ]
-          }
-        ],
-        where : {
-          id : user_id
-        }
-      });
-
       /* session 없을 땐 로그인 화면으로 */
-        if(!req.session.user_name) {
-            req.session.returnTo = '/mypage/user';
+      if(!req.session.user_name) {
+          req.session.returnTo = '/mypage/user';
+          res.redirect('/');
+      }else{
+        findUser(req.session.user_id).then(user_info => {
+          res.render('mypage/user', {data : user_info, session : req.session});
+        }).catch(err => {
+            console.log("\n*** ERROR : " + err);
             res.redirect('/');
-        }else{
-            connectionPool.getConnection(function(err, connection) {
-                connection.query('select u.* '+
-                                    ', (select org_nm from com_org where org_id = u.team_id) as team_name '+
-                                    ', (select org_nm from com_org where org_id = u.sm_id) as sm_name '+
-                                 'from user u '+
-                                 'where u.id = ?;', req.session.user_id, function(error, rows) {
-
-                    if(error) {
-                        connection.release();
-                        throw error;
-                    }else {
-                        if(rows.length > 0) {
-
-                            res.render('mypage/user', {data : rows[0], session : req.session});
-                            connection.release();
-                        }else {
-                            res.redirect('/');
-                            connection.release();
-                        }
-                    }
-                });
-            });
-        }
+        });;
+      }
     });
 
     app.post('/user', function(req, res, next) {
@@ -177,5 +132,36 @@ module.exports = function(app, connectionPool) {
             }
         });
     });
+
+    /*************************************************************************
+     * BELOW FUNCTIONS ARE QUERY MODULES
+     *************************************************************************/
+     function findUser(user_id) {
+       user.belongsTo(com_org, {as: 'team', foreignKey: 'team_id'});
+       user.belongsTo(com_org, {as: 'sm', foreignKey: 'sm_id'});
+
+       user.findOne({
+         raw: true,
+         include : [
+           {
+             model: com_org,
+             as: 'team',
+             attributes:[
+               [models.Sequelize.col('org_nm'), 'team_name']
+             ]
+           },
+           {
+             model: com_org,
+             as: 'sm',
+             attributes:[
+               [models.Sequelize.col('org_nm'), 'sm_name']
+             ]
+           }
+         ],
+         where : {
+           id : user_id
+         }
+       });
+     }
 
 };
