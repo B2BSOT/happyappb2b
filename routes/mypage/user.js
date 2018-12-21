@@ -23,87 +23,87 @@ module.exports = function(app, connectionPool) {
     });
 
     app.post('/user', function(req, res, next) {
-        /* session 없을 땐 로그인 화면으로 */
-        if(!req.session.user_name) {
-            res.redirect('/');
-        }
+      /* session 없을 땐 로그인 화면으로 */
+      if(!req.session.user_name) {
+          res.redirect('/');
+      }
 
-        if(req.session.user_id == req.body.user_id) {
-          // console.log(req.body);
-          models.sequelize.transaction(function (t) {
-            user.update({
-              {
-                phone_number : req.body.phone_number,
-                birthday : req.body.birthday,
-                user_img : req.body.user_ing,
-                home_town : req.body.home_town
-              },
-              {
-                where: req.session.user_id
-              }
-            }).then(function (result) {
-              res.json({success : "Updated Success", status : 200, user_img : req.body.user_img});
+      if(req.session.user_id == req.body.user_id) {
+        // console.log(req.body);
+        models.sequelize.transaction(function (t) {
+          user.update({
+            {
+              phone_number : req.body.phone_number,
+              birthday : req.body.birthday,
+              user_img : req.body.user_ing,
+              home_town : req.body.home_town
+            },
+            {
+              where: req.session.user_id
+            }
+          }).then(function (result) {
+            res.json({success : "Updated Success", status : 200, user_img : req.body.user_img});
 
-            }).catch(function (err) {
-              res.json({success : "Updated fail", status : 500}); // express 사용 시
+          }).catch(function (err) {
+            res.json({success : "Updated fail", status : 500}); // express 사용 시
 
-            });
           });
-        }else {
-          res.json({success : "FAIL(Wrong UserId)", status : 500});
-        }
+        });
+      }else {
+        res.json({success : "FAIL(Wrong UserId)", status : 500});
+      }
     });
 
     app.post('/imageinsert', function(req, res, next) {
-         connectionPool.getConnection(function(err, connection) {
-            /* 이미지 변경, 삽입시 DB INSERT */
-            var common = new (require('../common/common'))();
-            var result = common.insertImage(req, connection);
+      connectionPool.getConnection(function(err, connection) {
+          /* 이미지 변경, 삽입시 DB INSERT */
+          var common = new (require('../common/common'))();
+          var result = common.insertImage(req, connection);
 
-            if(result) {
-                connection.release();
-                throw result;
-            }else {
-                res.json({success : "Successfully", status : 200});
-                connection.release();
-            }
-        });
+          if(result) {
+              connection.release();
+              throw result;
+          }else {
+              res.json({success : "Successfully", status : 200});
+              connection.release();
+          }
+      });
     });
 
-        app.post('/deleteExsistingImage', function(req, res, next) {
-         connectionPool.getConnection(function(err, connection) {
-            console.log('user.js로 들어옴 url : '+req.body.beforeImageUrl);
-            /* 유저img값 DB에 있는지 확인 및 해당 해시로 삭제 */
-            var common1 = new (require('../common/common'))();
-            var result = common1.deleteImage(req, connection);
+    app.post('/deleteExsistingImage', function(req, res, next) {
+     connectionPool.getConnection(function(err, connection) {
+        console.log('user.js로 들어옴 url : '+req.body.beforeImageUrl);
+        /* 유저img값 DB에 있는지 확인 및 해당 해시로 삭제 */
+        var common1 = new (require('../common/common'))();
+        var result = common1.deleteImage(req, connection);
 
-            if(result) {
-                console.log('common.js에서 true 리턴')
-                res.json({success : "Successfully", status : 200});
-                connection.release();
-                return result;
-            }else {
-                 console.log('common.js에서 false 리턴')
-                connection.release();
-                throw result;
-            }
-        });
+        if(result) {
+            console.log('common.js에서 true 리턴')
+            res.json({success : "Successfully", status : 200});
+            connection.release();
+            return result;
+        }else {
+             console.log('common.js에서 false 리턴')
+            connection.release();
+            throw result;
+        }
+      });
     });
 
-        app.post('/displayimage', function(req, res, next) {
-         connectionPool.getConnection(function(err, connection) {
-            /* 이미지 변경확정시, 삽입시 DB UPDATE */
-            var common = new (require('../common/common'))();
-            var result = common.displayImage(req, connection);
+    app.post('/displayimage', function(req, res, next) {
+     connectionPool.getConnection(function(err, connection) {
+        /* 이미지 변경확정시, 삽입시 DB UPDATE */
+        var common = new (require('../common/common'))();
+        var result = common.displayImage(req, connection);
 
-            if(result) {
-                connection.release();
-                throw result;
-            }else {
-                res.json({success : "Successfully", status : 200});
-                connection.release();
-            }
-        });
+        if(result) {
+            connection.release();
+            throw result;
+        }else {
+            res.json({success : "Successfully", status : 200});
+            connection.release();
+        }
+      });
     });
 
     /*************************************************************************
