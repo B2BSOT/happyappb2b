@@ -32,15 +32,13 @@ module.exports = function(app, connectionPool) {
         // console.log(req.body);
         models.sequelize.transaction(function (t) {
           user.update({
-            {
-              phone_number : req.body.phone_number,
-              birthday : req.body.birthday,
-              user_img : req.body.user_ing,
-              home_town : req.body.home_town
-            },
-            {
-              where: req.session.user_id
-            }
+            phone_number : req.body.phone_number,
+            birthday : req.body.birthday,
+            user_img : req.body.user_ing,
+            home_town : req.body.home_town
+          },
+          {
+            where: req.session.user_id
           }).then(function (result) {
             res.json({success : "Updated Success", status : 200, user_img : req.body.user_img});
 
