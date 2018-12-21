@@ -26,58 +26,31 @@ module.exports = function(app, connectionPool) {
         /* session 없을 땐 로그인 화면으로 */
         if(!req.session.user_name) {
             res.redirect('/');
+        }
 
-        }else if(req.session.user_id == req.body.user_id) {
-            // console.log(req.body);
-            connectionPool.getConnection(function(err, connection) {
+        if(req.session.user_id == req.body.user_id) {
+          // console.log(req.body);
+          models.sequelize.transaction(function (t) {
+            user.update({
+              {
+                phone_number : req.body.phone_number,
+                birthday : req.body.birthday,
+                user_img : req.body.user_ing,
+                home_town : req.body.home_town
+              },
+              {
+                where: req.session.user_id
+              }
+            }).then(function (result) {
+              res.json({success : "Updated Success", status : 200, user_img : req.body.user_img});
 
-                connection.beginTransaction(function(err) {
-                    if(err) {
-                        connection.release();
-                        throw err;
-                    }
-
-                    var params = [req.body.phone_number, req.body.birthday, req.body.user_img, req.body.home_town, req.session.user_id];
-                    connection.query('update user '+
-                                        'set phone_number = ?, birthday = ?, user_img = ?, home_town = ? '+
-                                      'where id = ?;', params, function(error, result) {
-                        if(error) {
-                            console.log("ERROR!!!!!!!!!");
-
-                            connection.rollback(function() {
-                                connection.release();
-                                console.error("update user rollback error");
-                                throw error;
-                            });
-                            connection.release();
-                            throw error;
-                        } // error
-
-                        console.log("RESULT : " + result.affectedRows);
-
-                        if(result.affectedRows > 0) {
-                            connection.commit(function(err) {
-                                if(err) {
-                                    console.error("update user commit error : " + err);
-                                    connection.rollback(function() {
-                                        connection.release();
-                                        console.error("update user rollback error");
-                                        throw error;
-                                    });
-                                }
-
-                                res.json({success : "Updated Success", status : 200, user_img : req.body.user_img}); // express 사용 시
-                            });
-                        }else {
-                            res.json({success : "Updated fail", status : 500}); // express 사용 시
-                        }
-
-                        connection.release();
-                    });
-                });
-
+            }).catch(function (err) {
+              res.json({success : "Updated fail", status : 500}); // express 사용 시
 
             });
+          });
+        }else {
+          res.json({success : "FAIL(Wrong UserId)", status : 500});
         }
     });
 
@@ -140,7 +113,7 @@ module.exports = function(app, connectionPool) {
        user.belongsTo(com_org, {as: 'team', foreignKey: 'team_id'});
        user.belongsTo(com_org, {as: 'sm', foreignKey: 'sm_id'});
 
-       user.findOne({
+       return user.findOne({
          raw: true,
          include : [
            {
@@ -161,6 +134,8 @@ module.exports = function(app, connectionPool) {
          where : {
            id : user_id
          }
+       }).then(result => {
+         return result;
        });
      }
 
